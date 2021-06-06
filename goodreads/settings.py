@@ -19,7 +19,7 @@ NEWSPIDER_MODULE = 'goodreads.spiders'
 #USER_AGENT = 'goodreadsGiveaway (+https://github.com/kaushikthedeveloper/Goodreads-Giveaway-BOT)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32

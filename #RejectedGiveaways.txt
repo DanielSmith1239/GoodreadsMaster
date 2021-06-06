@@ -1,1 +1,0 @@
-# will contain the list of Giveaways IGNORED when BOT is run
