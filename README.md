@@ -33,42 +33,11 @@ $ scrapy crawl giveaway -a username="***email_id***" -a password="***password***
 ```
 
 This will start the bot with **User logging** in using the Email ID and password provided as arguments. Once logged in, 
-the *spider* will start, traversing through the Giveaway pages : 
-[Ending soon](https://www.goodreads.com/giveaway?sort=ending_soon&tab=ending_soon) , 
-[Most requested](https://www.goodreads.com/giveaway?sort=most_requested&tab=most_requested), 
-[Popular authors](https://www.goodreads.com/giveaway?sort=popular_authors&tab=popular_authors) and 
-the [Latest](https://www.goodreads.com/giveaway?sort=popular_authors&tab=popular_authors) *giveaways*
+the *spider* will start, traversing through the Giveaway pages.
 
-### Features
-
-  - *Asychronous* calls to pages, meaning faster crawling
-  
+### Features  
   - Verbose Output during execution of Spider
-  
-  - Option to *Ignore giveaways* based on selective keywords as specified by user
-    - Blacklist according to the title
-    ```
-    # blacklisted_titles.txt
-    # provide the list of blacklisted words that should be checked in the titles
-    # provide each word line-wise
-    # Ex:
-    word1
-    word2
-    word3
-    ```
-    - Blacklist according to the description
-    ```
-    # blacklisted_words.txt
-    # provide the list of blacklisted words that should be checked in the decription
-    # provide each word line-wise
-    # Ex:
-    word11
-    word12
-    word13
-    ```
-    
   - Store the Entered Giveaways list in file : *#EnteredGiveaways.txt*
-  - Store the Rejected Giveaways list in file : *#RejectedGiveaways.txt*
     
   - When the Giveaway is being entered, the "*Also add this book to my to-read shelf.*" checkbox is un-ticked.
 
