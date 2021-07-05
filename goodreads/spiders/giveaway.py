@@ -7,7 +7,7 @@ import json, re
 
 class MySpider(scrapy.Spider):
     # define the spider name
-    name = 'giveaway'
+    name = 'giveaway_bot'
 
     # $scrapy crawl giveaway -a username='...username...' -a password='...password...'
 
@@ -120,9 +120,9 @@ class MySpider(scrapy.Spider):
     '''
 
     def select_address(self, response):
-   
+
         # 1st button (Select this address)
-        next_page = response.xpath('//a[contains(text(),"Select This Address")]/@href').extract_first()
+        next_page = response.xpath('//a[contains(text(),"select this address")]/@href').extract_first()
 
         # change the value of the authenticity token
         self.authenticity_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
