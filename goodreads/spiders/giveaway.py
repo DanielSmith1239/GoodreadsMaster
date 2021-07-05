@@ -9,7 +9,7 @@ class MySpider(scrapy.Spider):
     # define the spider name
     name = 'giveaway_bot'
 
-    # $scrapy crawl giveaway -a username='...username...' -a password='...password...'
+    # $scrapy crawl giveaway_bot -a username='...username...' -a password='...password...'
 
     def __init__(self, category=None, *args, **kwargs):
         super(MySpider, self).__init__(*args, **kwargs)
