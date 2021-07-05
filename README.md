@@ -29,7 +29,7 @@ $ pip install Scrapy
 
 Run the crawler 
 ```
-$ scrapy crawl giveaway -a username="***email_id***" -a password="***password***"
+$ scrapy crawl giveaway_bot -a username="***email_id***" -a password="***password***"
 ```
 
 This will start the bot with **User logging** in using the Email ID and password provided as arguments. Once logged in, 
