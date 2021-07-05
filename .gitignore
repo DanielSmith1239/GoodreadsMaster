@@ -138,4 +138,4 @@ dmypy.json
 cython_debug/
 
 # Project-Specific
-'#EnteredGiveaways.txt'
+EnteredGiveaways.txt

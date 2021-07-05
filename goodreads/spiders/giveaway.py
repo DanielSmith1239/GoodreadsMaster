@@ -24,7 +24,7 @@ class MySpider(scrapy.Spider):
         self.entered_giveaway_count = 0
 
         # the file to which logs of Entered Giveaways are to be provided
-        self.f_entered_giveaways = '#EnteredGiveaways.txt'
+        self.f_entered_giveaways = 'EnteredGiveaways.txt'
 
 
         # get the username and password passed in the command line
