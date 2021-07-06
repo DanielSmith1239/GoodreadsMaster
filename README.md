@@ -32,14 +32,15 @@ Run the crawler
 $ scrapy crawl giveaway_bot -a username="***email_id***" -a password="***password***"
 ```
 
-This will start the bot with **User logging** in using the Email ID and password provided as arguments. Once logged in, 
-the *spider* will start, traversing through the Giveaway pages.
+This will start the bot with logging in using the Email ID and password provided as arguments. Once logged in, 
+the spider will start, traversing through the Giveaway pages.
 
 ### Features  
   - Verbose Output during execution of Spider
   - Store the Entered Giveaways list in file : *EnteredGiveaways.txt*
     
   - When the Giveaway is being entered, the "*Also add this book to my to-read shelf.*" checkbox is un-ticked.
+    > Don't think this actually works, I might fix it at some point.
 
   - [Scrapy Settings](https://github.com/DanielSmith1239/GoodreadsMaster/blob/master/goodreads/settings.py):
     ```
