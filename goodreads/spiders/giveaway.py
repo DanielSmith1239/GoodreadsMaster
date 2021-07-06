@@ -3,11 +3,12 @@ from scrapy import FormRequest
 from datetime import datetime
 from scrapy.shell import inspect_response
 import json, re
-
+import html
 
 class MySpider(scrapy.Spider):
     # define the spider name
     name = 'giveaway_bot'
+    kindle_regex = r'(https:\/\/www\.goodreads\.com\/giveaway\/enter_kindle_giveaway\/\d+)'
 
     # $scrapy crawl giveaway_bot -a username='...username...' -a password='...password...'
 
@@ -37,7 +38,7 @@ class MySpider(scrapy.Spider):
 
         # urls containing the giveaway lists
         self.giveaway_starting_urls = [
-            'https://www.goodreads.com/giveaway'
+            'https://www.goodreads.com/giveaway?sort=recently_listed'
         ]
 
     '''
@@ -45,7 +46,7 @@ class MySpider(scrapy.Spider):
     '''
 
     def parse(self, response):
-        # submit for login
+        print('- Logging in...', end='\r')
         return [FormRequest.from_response(response,
                                           formdata={'user[email]': self.username,
                                                     'user[password]': self.password},
@@ -66,12 +67,11 @@ class MySpider(scrapy.Spider):
 
         # login failed => close the spider
         if "sign_in" in response.url or b'try again' in response.body:
-            self.logger.error("\n\n-------------------------- Login failed --------------------------\n\n")
+            print('Login failed.')
             return
 
         # login successful
-        self.log("\n\n-------------------------- Logged in successfully : %s --------------------------\n\n"
-                 % self.username)
+        print(f'- Login successful: {self.username}')
 
         # Modify file EnteredGiveaway to show present date-time
         # append to the end
@@ -81,60 +81,72 @@ class MySpider(scrapy.Spider):
         # traverse to the giveaway list pages
         for url in self.giveaway_starting_urls:
             yield scrapy.Request(url=url, callback=self.crawl_pages)
-           
-    
+
     def crawl_pages(self, response):
         # Process items on this page
         urls = self.get_json_matches('enterGiveawayUrl', response.text)
+
         for url in urls:
             yield scrapy.Request(url='https://www.goodreads.com' + url, callback=self.select_address)
+        
+        suffix = 's' if len(urls) > 1 else ''
+        print(f'- Added {len(urls)} giveaway{suffix} to queue.')
        
         # Crawl next page of results
         jwt_prop = self.get_json_matches('jwtToken', response.text)
         jwt = jwt_prop[0] if jwt_prop is not None and len(jwt_prop) > 0 else response.request.headers['authorization']
-        next_page_token = self.get_json_matches('nextPageToken', response.text)[0]
-        request_body = json.dumps({
-            "operationName": "getGiveaways",
-            "query": "query getGiveaways($format: GiveawayFormat, $sort: GiveawaySortOption, $genre: String, $nextPageToken: String, $limit: Int) {\n  getGiveaways(\n    getGiveawaysInput: {sort: $sort, format: $format, genre: $genre}\n    pagination: {after: $nextPageToken, limit: $limit}\n  ) {\n    edges {\n      node {\n        id\n        legacyId\n        details {\n          book {\n            id\n            imageUrl\n            title\n            titleComplete\n            description\n            primaryContributorEdge {\n              ...BasicContributorFragment\n              __typename\n            }\n            secondaryContributorEdges {\n              ...BasicContributorFragment\n              __typename\n            }\n            __typename\n          }\n          format\n          genres {\n            name\n            __typename\n          }\n          numCopiesAvailable\n          numEntrants\n          enterGiveawayUrl\n          __typename\n        }\n        metadata {\n          countries {\n            countryCode\n            __typename\n          }\n          endDate\n          __typename\n        }\n        webUrl\n        __typename\n      }\n      __typename\n    }\n    pageInfo {\n      hasNextPage\n      nextPageToken\n      __typename\n    }\n    totalCount\n    __typename\n  }\n}\n\nfragment BasicContributorFragment on BookContributorEdge {\n  node {\n    id\n    name\n    webUrl\n    isGrAuthor\n    __typename\n  }\n  role\n  __typename\n}\n",
-            "variables": {
-                "nextPageToken": next_page_token
-            }
-        })
-        #headers = {'authorization': jwt, 'Content-Length': len(request_body),
-        #'Host': 'https://www.goodreads.com'}
-        headers = {'authorization': jwt}
+        
 
+        next_page_token = self.get_json_matches('nextPageToken', response.text)
 
         if len(next_page_token) > 0:
+            request_body = json.dumps({
+                "operationName": "getGiveaways",
+                "query": "query getGiveaways($format: GiveawayFormat, $sort: GiveawaySortOption, $genre: String, $nextPageToken: String, $limit: Int) {\n  getGiveaways(\n    getGiveawaysInput: {sort: $sort, format: $format, genre: $genre}\n    pagination: {after: $nextPageToken, limit: $limit}\n  ) {\n    edges {\n      node {\n        id\n        legacyId\n        details {\n          book {\n            id\n            imageUrl\n            title\n            titleComplete\n            description\n            primaryContributorEdge {\n              ...BasicContributorFragment\n              __typename\n            }\n            secondaryContributorEdges {\n              ...BasicContributorFragment\n              __typename\n            }\n            __typename\n          }\n          format\n          genres {\n            name\n            __typename\n          }\n          numCopiesAvailable\n          numEntrants\n          enterGiveawayUrl\n          __typename\n        }\n        metadata {\n          countries {\n            countryCode\n            __typename\n          }\n          endDate\n          __typename\n        }\n        webUrl\n        __typename\n      }\n      __typename\n    }\n    pageInfo {\n      hasNextPage\n      nextPageToken\n      __typename\n    }\n    totalCount\n    __typename\n  }\n}\n\nfragment BasicContributorFragment on BookContributorEdge {\n  node {\n    id\n    name\n    webUrl\n    isGrAuthor\n    __typename\n  }\n  role\n  __typename\n}\n",
+                "variables": {
+                    "nextPageToken": next_page_token[0],
+                    "sort": "RECENTLY_LISTED"
+                }
+            })
+
+            headers = {'authorization': jwt}
+            
             yield scrapy.Request(url='https://kxbwmqov6jgg3daaamb744ycu4.appsync-api.us-east-1.amazonaws.com/graphql', method='POST',
                 body=request_body, headers=headers, callback=self.crawl_pages)
-        
-        
     
     def get_json_matches(self, prop, data):
-        return re.findall(f'"{prop}":"([^"]*)"', data)
+        return re.findall(f'"{prop}":"([^"]+)"', data)
 
     '''
     Inside Giveaway page
     => select the 1st address (should be already arranged by user prior to running the spider)
     '''
-
     def select_address(self, response):
-
         # 1st button (Select this address)
         next_page = response.xpath('//a[contains(text(),"select this address")]/@href').extract_first()
+        url = ''
+        
+        # If giveaway is for kindle...
+        kindle_match = re.search(self.kindle_regex, response.request.url)
+        if kindle_match is not None:
+            #print(response.request.url)
+            url = kindle_match.group(1)
+        elif next_page is not None:
+            url = 'https://www.goodreads.com' + next_page
+        else:
+            return
+        
 
         # change the value of the authenticity token
         self.authenticity_token = response.xpath('//meta[@name="csrf-token"]/@content').extract_first()
 
-        if next_page is not None:
-            # post method here
-            return [FormRequest(url='https://www.goodreads.com' + next_page,
-                                formdata={
-                                    'authenticity_token': self.authenticity_token
-                                },
-                                callback=self.final_page)
-                    ]
+        # post method here
+        return [FormRequest(url=url,
+            formdata={
+                'authenticity_token': self.authenticity_token
+            },
+            callback=self.final_page)
+        ]
 
     '''
     Page for confirmation
@@ -144,31 +156,50 @@ class MySpider(scrapy.Spider):
 
     NOTE : user is entered into the Giveaway at this stage
     '''
-
     def final_page(self, response):
         return [FormRequest.from_response(response,
-                                          formdata={
-                                              'authenticity_token': self.authenticity_token,
-                                              'commit': 'Enter Giveaway',
-                                              'entry_terms': '1',
-                                              'utf8': "&#x2713;",
-                                              'want_to_read': '0'
-                                          },
-                                          formname="entry_form",
-                                          callback=self.giveaway_accepted)
-                ]
+            formdata={
+                'authenticity_token': self.authenticity_token,
+                'commit': 'Enter Giveaway',
+                'entry_terms': '1',
+                'utf8': "&#x2713;",
+                'want_to_read': '0'
+            },
+            formname="entry_form",
+            callback=self.giveaway_accepted
+        )]
+       
 
-    # Final page : done
     '''
     Final page - user has been entered into the Giveaway by now
     => inform user
     => increment Entered giveaway count
     '''
-
     def giveaway_accepted(self, response):
-        # inspect_response(response,self)
-        p_res = response.request.url.replace("https://www.goodreads.com/giveaway/enter_choose_address/", "")
-        self.log('\n\n-------------------------- Giveaway Entered : %s --------------------------\n\n' % p_res)
+        try:
+            #print(response.text)
+            heading = html.unescape(re.search(r'<div class="coverImage">\s*<a href="[^"]+">\s*<img alt="([^"]+)"', response.text).group(1))
+            heading = re.sub(r'\s+', ' ', heading).strip()
+            split_heading = heading.split(' by ')
+            
+            book_name = ' '.join(split_heading[:-1])
+            author = split_heading[-1]
+            
+            copies_available = re.search(r'(\d+) copies available', response.text).group(1)
+            entries = re.search(r'(\d+) people requesting', response.text).group(1)
+            format_text = '\x1B[38;5;75mPrint\x1B[0m' if 'Print book' in response.text else '\x1B[38;5;214mKindle\x1B[0m'
+            
+            dates = re.search(r'Giveaway dates:</b>\s*(\w+ \d+)\s*- (\w+ \d+, \d+)', response.text)
+            end_date = dates.group(2)
+            both_dates_text = f'{dates.group(1)} - {end_date}'
+     
+            print(f'- \x1B[38;5;42mEntered Givaway\x1B[0m: \x1B[3m{book_name}\x1B[0m by {author}')
+            print(f'\tFormat: {format_text}')
+            print(f'\t{copies_available} copies available.')
+            print(f'\t{entries} users entered.')
+            print(f'\tEnds on {end_date}.')
+        except:
+            print(f'- \x1B[38;5;42mEntered Givaway\x1B[0m (unable to get details).')
 
         self.entered_giveaway_count += 1
         with open(self.f_entered_giveaways, 'a') as f:
@@ -179,12 +210,14 @@ class MySpider(scrapy.Spider):
     @overridden close
     Before closing the Spider - show final log to user
     '''
-
     def close(spider, reason):
         spider.log('\n\n------------------------------- BOT WORK COMPELETED -------------------------------\n\n')
         spider.log('\n\n-------------------------- Giveaways Entered : %d --------------------------\n'
                    % spider.entered_giveaway_count)
         spider.log('\n\n------------------------------- REGARDS -------------------------------\n\n')
+
+def bold(text):
+    return f'\x1B[1m{text}\x1B[0m'
 
 
 '''
