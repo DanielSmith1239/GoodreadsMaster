@@ -1,7 +1,7 @@
 # GoodreadsMaster
 > Forked from [Goodreads-Giveaway-BOT](https://github.com/kaushikthedeveloper/Goodreads-Giveaway-BOT).
 
-An automated Bot that enters the *User* onto [Giveaways on Goodreads](https://www.goodreads.com/giveaway) using 
+An automated Bot that enters the user onto [Giveaways on Goodreads](https://www.goodreads.com/giveaway) using 
 [Scrapy web-crawler](https://scrapy.org/).
 
 ## Prerequisites
