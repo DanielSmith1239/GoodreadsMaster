@@ -37,11 +37,11 @@ the *spider* will start, traversing through the Giveaway pages.
 
 ### Features  
   - Verbose Output during execution of Spider
-  - Store the Entered Giveaways list in file : *#EnteredGiveaways.txt*
+  - Store the Entered Giveaways list in file : *EnteredGiveaways.txt*
     
   - When the Giveaway is being entered, the "*Also add this book to my to-read shelf.*" checkbox is un-ticked.
 
-  - [Scrapy Settings](https://github.com/kaushikthedeveloper/Goodreads-Giveaway-BOT/blob/master/goodreads/settings.py) :
+  - [Scrapy Settings](https://github.com/DanielSmith1239/GoodreadsMaster/blob/master/goodreads/settings.py):
     ```
     # Obey robots.txt rules
     ROBOTSTXT_OBEY = True
