@@ -32,7 +32,7 @@ ROBOTSTXT_OBEY = False
 AUTOTHROTTLE_ENABLED = True
 AUTOTHROTTLE_START_DELAY = 2
 AUTOTHROTTLE_MAX_DELAY = 5
-#DOWNLOAD_DELAY = 3
+#DOWNLOAD_DELAY=3.0
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
@@ -92,6 +92,10 @@ AUTOTHROTTLE_MAX_DELAY = 5
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+#USER_AGENT = 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; http://www.google.com/bot.html) Chrome/W.X.Y.Z? Safari/537.36'
 
 COOKIES_ENABLED = True
 #COOKIES_DEBUG = True
+
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:39.0) Gecko/20100101 Firefox/39.0'
+
