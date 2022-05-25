@@ -15,8 +15,6 @@ class MySpider(scrapy.Spider):
     def __init__(self, category=None, *args, **kwargs):
         super(MySpider, self).__init__(*args, **kwargs)
 
-        self.start_urls = ["https://www.goodreads.com/user/sign_in", ]
-
         # intialise all members
 
         # used for header in POST
@@ -40,18 +38,37 @@ class MySpider(scrapy.Spider):
         self.giveaway_starting_urls = [
             'https://www.goodreads.com/giveaway?sort=recently_listed'
         ]
+    
+    def get_sign_in_url(self, response):
+        print('- Getting login url...')
+        match = re.search(r'(https:\/\/www.goodreads.com\/ap\/signin\?language=en_[^"]+)', response.text)
+        url = match.group(1).replace('&amp;', '&')
+        print(f'- Login url found.')
+        return url
+        
+        
+    def start_requests(self):
+        url = 'https://www.goodreads.com/user/sign_in'
+        yield scrapy.Request(url=url, meta={'cookiejar': 0})
 
     '''
     LOGIN : use the username and password passed by the user
     '''
 
     def parse(self, response):
+            url = self.get_sign_in_url(response)
+            yield scrapy.Request(url=url, callback=self.log_in, meta={'cookiejar': response.meta['cookiejar']}, errback=lambda x: print(repr(x)))
+
+    def log_in(self, response):
         print('- Logging in...', end='\r')
-        return [FormRequest.from_response(response,
-                                          formdata={'user[email]': self.username,
-                                                    'user[password]': self.password},
-                                          formname="sign_in",
-                                          callback=self.after_login)]
+
+        yield FormRequest.from_response(response,
+            formdata={'email': self.username,
+            'password': self.password},
+            formname="sign_in",
+            meta={'cookiejar': response.meta['cookiejar']},
+            callback=self.after_login,
+            )
 
     '''
     If Login not successful => exit
@@ -64,9 +81,8 @@ class MySpider(scrapy.Spider):
     '''
 
     def after_login(self, response):
-
-        # login failed => close the spider
-        if "sign_in" in response.url or b'try again' in response.body:
+        # login failed => close the spider        
+        if "sign_in" in response.url or b'try again' in response.body or '"signedIn":false' in response.text:
             print('Login failed.')
             return
 
@@ -80,22 +96,22 @@ class MySpider(scrapy.Spider):
 
         # traverse to the giveaway list pages
         for url in self.giveaway_starting_urls:
-            yield scrapy.Request(url=url, callback=self.crawl_pages)
+            yield scrapy.Request(url=url, callback=self.crawl_pages, meta={'cookiejar': response.meta['cookiejar']})
 
     def crawl_pages(self, response):
         # Process items on this page
         urls = self.get_json_matches('enterGiveawayUrl', response.text)
 
         for url in urls:
-            yield scrapy.Request(url='https://www.goodreads.com' + url, callback=self.select_address)
+            yield scrapy.Request(url='https://www.goodreads.com' + url, callback=self.select_address, meta={'cookiejar': response.meta['cookiejar']})
         
         suffix = 's' if len(urls) > 1 else ''
         print(f'- Added {len(urls)} giveaway{suffix} to queue.')
        
         # Crawl next page of results
         jwt_prop = self.get_json_matches('jwtToken', response.text)
+
         jwt = jwt_prop[0] if jwt_prop is not None and len(jwt_prop) > 0 else response.request.headers['authorization']
-        
 
         next_page_token = self.get_json_matches('nextPageToken', response.text)
 
@@ -112,7 +128,7 @@ class MySpider(scrapy.Spider):
             headers = {'authorization': jwt}
             
             yield scrapy.Request(url='https://kxbwmqov6jgg3daaamb744ycu4.appsync-api.us-east-1.amazonaws.com/graphql', method='POST',
-                body=request_body, headers=headers, callback=self.crawl_pages)
+                body=request_body, headers=headers, callback=self.crawl_pages, meta={'cookiejar': response.meta['cookiejar']})
     
     def get_json_matches(self, prop, data):
         return re.findall(f'"{prop}":"([^"]+)"', data)
@@ -129,7 +145,6 @@ class MySpider(scrapy.Spider):
         # If giveaway is for kindle...
         kindle_match = re.search(self.kindle_regex, response.request.url)
         if kindle_match is not None:
-            #print(response.request.url)
             url = kindle_match.group(1)
         elif next_page is not None:
             url = 'https://www.goodreads.com' + next_page
@@ -145,7 +160,9 @@ class MySpider(scrapy.Spider):
             formdata={
                 'authenticity_token': self.authenticity_token
             },
-            callback=self.final_page)
+            meta={'cookiejar': response.meta['cookiejar']},
+            callback=self.final_page,
+            errback=lambda x: print(repr(x)))
         ]
 
     '''
@@ -166,7 +183,9 @@ class MySpider(scrapy.Spider):
                 'want_to_read': '0'
             },
             formname="entry_form",
-            callback=self.giveaway_accepted
+            meta={'cookiejar': response.meta['cookiejar']},
+            callback=self.giveaway_accepted,
+            errback=lambda x: print(repr(x))
         )]
        
 
@@ -177,7 +196,6 @@ class MySpider(scrapy.Spider):
     '''
     def giveaway_accepted(self, response):
         try:
-            #print(response.text)
             heading = html.unescape(re.search(r'<div class="coverImage">\s*<a href="[^"]+">\s*<img alt="([^"]+)"', response.text).group(1))
             heading = re.sub(r'\s+', ' ', heading).strip()
             split_heading = heading.split(' by ')
@@ -226,8 +244,6 @@ Get contents in the file
 => strip whitespace
 => ignore empty lines
 '''
-
-
 def get_file_contents(filename):
     with open(filename) as f:
         required_list = [words.strip() for words in f.readlines() if len(words.strip()) > 0]
@@ -236,3 +252,4 @@ def get_file_contents(filename):
         return required_list
     else:
         return None
+
